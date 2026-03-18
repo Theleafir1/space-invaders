@@ -86,6 +86,24 @@ bool img7[77] {
 bool img8[25] {
 
 };
+bool img9[352] {
+    0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,
+    0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,
+    0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,
+    0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,
+    1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,
+    1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
+    1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,
+};
 struct Sprite {
     bool *data;
     char width;
@@ -192,7 +210,7 @@ public:
         }
     }
     inline bool isAlive(){return alive;}
-    inline void kill() {alive = false; }
+    inline void kill() {alive = false;}
     inline unsigned char X(){return x;}
     inline unsigned char Y(){return y;}
     inline bool retDAnim() {return deathAnim;}
@@ -242,11 +260,10 @@ int main(void)
     char explIndex{-1};
     char explosionTimer{};
     char randInv = rand()%55;   
-    SetTargetFPS(10);
+    SetTargetFPS(60);
     while (!WindowShouldClose())
     {
-        BeginTextureMode(screen);
-            ClearBackground(BLACK);
+        
         if (!IsKeyDown(KEY_Q)) {
 
         int aliveAmount{};
@@ -254,7 +271,7 @@ int main(void)
         for(int i = 0; i < 55; i++) {
             aliveAmount += invader[i].isAlive();
             if (invader[i].checkCollisions(player.bullet.X(), player.bullet.Y()) && player.bullet.isActive()) { player.bullet.disable(); explosionTimer = 16; }
-            if (invader[i].retDAnim()) explIndex = i;
+            if (invader[i].retDAnim() && invader[i].isAlive()) explIndex = i;
         }
         
         if (explosionTimer) explosionTimer--;
@@ -280,7 +297,7 @@ int main(void)
         else if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) pDir = 0;
         if ((IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_A))) player.move(pDir);
         //  shooting
-        if (IsKeyPressed(KEY_SPACE) && !player.bullet.isActive()) player.bullet.fire(player.X(), 0, explosionTimer);
+        if (IsKeyPressed(KEY_SPACE) && !player.bullet.isActive() && explIndex == -1) player.bullet.fire(player.X(), 0, explosionTimer);
         if (player.bullet.isActive()) player.bullet.update();
         //  death animation*
         
@@ -305,18 +322,21 @@ int main(void)
         
         }
             
-
+        BeginTextureMode(screen);
+            ClearBackground(BLACK);
             if (player.bullet.isActive()) {
             player.bullet.draw();
             }
             for(int count = 0; count < 55; count++) if (invader[count].isAlive()) invader[count].draw();
             std::cout << (short)explIndex << std::endl;
             if (explIndex != -1 && explosionTimer == 0) {
-                std::cout << "deleting" << std::endl;
                 for (int i = 0; i < sprite[6].width * sprite[6].height; i++)
                     if (sprite[6].data[i])
                         DrawPixel((i % sprite[6].width) + invader[explIndex].X(), (i / sprite[6].width) + invader[explIndex].Y(), BLACK);
+                invader[explIndex].kill();
+                explIndex = -1;
             }
+            
             player.draw();
         EndTextureMode();
 
