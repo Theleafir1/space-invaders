@@ -1,5 +1,5 @@
 #include <iostream>
-#include <raylib.h>
+#include "raylib.h"
 #include <cstdlib>
 #include <ctime>
 
@@ -122,16 +122,20 @@ Sprite sprite[9] {
     {img8,  5, 5}                                           // that's gonna be bullet mask
 };
 
-class Bullet {
+class invaderBullet {
+    char type{};
+    
+};
+
+class playerBullet {
     unsigned char x{}, y{};
-    char skin{};
     bool active{0};
 public:
     inline unsigned char X() {return x;}
     inline unsigned char Y() {return y;}
     inline bool isActive(){return active;}
     void disable() {active = false;}
-    void fire(unsigned char x, char skin, char explTimer){
+    void fire(unsigned char x, char explTimer){
         if (!explTimer){
         active = true;
         this->x = x + 5;
@@ -150,7 +154,9 @@ class Player {
     unsigned char x = 100;
     bool isAlive;
 public:
-    Bullet bullet;
+    char hp{3};
+    short score{};
+    playerBullet bullet;
     unsigned char X(){return x;}
     void move(bool direction) {
         if (direction) {if (x < 204) x+=1;}
@@ -215,11 +221,12 @@ public:
     inline unsigned char Y(){return y;}
     inline bool retDAnim() {return deathAnim;}
 
-    bool checkCollisions(unsigned char bulletX, unsigned char bulletY){
+    bool checkCollisions(const unsigned char bulletX,const unsigned char bulletY, short *score){
         unsigned char startX = x + sprite[image].offXl;
         unsigned char endX = x + sprite[image].hbW - sprite[image].offXr;
         if (bulletX >= startX && bulletX <= endX && bulletY > y &&  bulletY < y+8 && alive) {
             deathAnim = true;
+            *score += (type == 0) ? 30 : ((type == 1) ? 20 : 10);
             return true;
         }
         else return false;
@@ -259,18 +266,19 @@ int main(void)
     char aliveAmount = 0;
     char explIndex{-1};
     char explosionTimer{};
-    char randInv = rand()%55;   
+    char randInv = rand()%55;  
+    Player *currPlayer;
     SetTargetFPS(60);
     while (!WindowShouldClose())
     {
-        
+        if(1) currPlayer = &player;
         if (!IsKeyDown(KEY_Q)) {
 
         int aliveAmount{};
         explIndex = -1;
         for(int i = 0; i < 55; i++) {
             aliveAmount += invader[i].isAlive();
-            if (invader[i].checkCollisions(player.bullet.X(), player.bullet.Y()) && player.bullet.isActive()) { player.bullet.disable(); explosionTimer = 16; }
+            if (player.bullet.isActive() && invader[i].checkCollisions(player.bullet.X(), player.bullet.Y(), &(currPlayer->score))) { player.bullet.disable(); explosionTimer = 16; }
             if (invader[i].retDAnim() && invader[i].isAlive()) explIndex = i;
         }
         
@@ -297,7 +305,7 @@ int main(void)
         else if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) pDir = 0;
         if ((IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_A))) player.move(pDir);
         //  shooting
-        if (IsKeyPressed(KEY_SPACE) && !player.bullet.isActive() && explIndex == -1) player.bullet.fire(player.X(), 0, explosionTimer);
+        if (IsKeyPressed(KEY_SPACE) && !player.bullet.isActive() && explIndex == -1) player.bullet.fire(player.X(), explosionTimer);
         if (player.bullet.isActive()) player.bullet.update();
         //  death animation*
         
@@ -321,7 +329,7 @@ int main(void)
         
         
         }
-            
+        // if(aliveAmount <= 0) YOU WON THE ROUND
         BeginTextureMode(screen);
             ClearBackground(BLACK);
             if (player.bullet.isActive()) {
@@ -336,7 +344,7 @@ int main(void)
                 invader[explIndex].kill();
                 explIndex = -1;
             }
-            
+            DrawText(TextFormat("%d", currPlayer->score), 10, 15, 10, WHITE);
             player.draw();
         EndTextureMode();
 
